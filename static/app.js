@@ -191,9 +191,10 @@ function renderPost(p) {
   const comments = p.comments
     .map(
       (c) =>
-        `<div class="comment"><span class="avatar">${c.avatar}</span><span><span class="author">${escapeHtml(c.author)}</span>${escapeHtml(c.text)}${c.ai ? ' <span class="ai-tag" title="live Claude reply">✨</span>' : ""}</span></div>`
+        `<div class="comment${c.crowd ? " crowd" : ""}"><span class="avatar">${c.avatar}</span><span><span class="author">${escapeHtml(c.author)}</span>${escapeHtml(c.text)}${c.ai ? ' <span class="ai-tag" title="live Claude reply">✨</span>' : ""}</span></div>`
     )
     .join("");
+  const likedBy = renderLikedBy(p.liked_by, p.likes);
   el.innerHTML = `
     <div class="post-head">
       <span class="avatar">${p.avatar}</span>
@@ -201,6 +202,7 @@ function renderPost(p) {
       <span class="time">${timeAgo(p.ts)}</span>
     </div>
     <div class="post-text">${escapeHtml(p.text)}</div>
+    ${likedBy ? `<div class="liked-by">${likedBy}</div>` : ""}
     <div class="post-stats">
       <span>❤️ ${p.likes}</span>
       <span>💬 ${p.comments.length}</span>
@@ -209,6 +211,13 @@ function renderPost(p) {
     ${comments ? `<div class="comments">${comments}</div>` : ""}
   `;
   return el;
+}
+
+function renderLikedBy(likedBy, likes) {
+  if (!likedBy || !likedBy.length) return "";
+  const names = likedBy.map((h) => `@${escapeHtml(h)}`).join(", ");
+  const rest = likes - likedBy.length;
+  return `liked by ${names}${rest > 0 ? ` and ${rest} others` : ""}`;
 }
 
 async function submitPost() {

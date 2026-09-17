@@ -17,6 +17,7 @@ import time
 from flask import Flask, jsonify, render_template, request, session, send_from_directory
 
 import ai_backend
+from crowd import CROWD_HANDLES, crowd_avatar
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
@@ -194,6 +195,44 @@ HYPE_WORDS = [
 ]
 SNARK_WORDS = ["boring", "meh", "whatever", "lame", "mid", "cringe", "npc", "basic"]
 
+# Short, generic one-liners for the crowd (CROWD_HANDLES) - unlike ARCHETYPE_REPLIES
+# these aren't tied to any one character, just background noise from randoms.
+CROWD_REPLIES = {
+    "hype": [
+        "not me finding this at 2am 😭",
+        "the algorithm blessed me fr",
+        "screenshotting this for the group chat",
+        "okay this is sending me",
+        "living for this ngl",
+    ],
+    "drama": [
+        "wait what did I just walk into",
+        "the way I gasped, tell me more",
+        "this is not the content I expected but okay",
+        "someone please explain the timeline",
+    ],
+    "cancel": [
+        "this you? 💀",
+        "the replies are NOT gonna be nice",
+        "oop-",
+        "saw this coming ngl",
+    ],
+    "snark": [
+        "...okay",
+        "sure jan",
+        "this is a lot",
+    ],
+    "neutral": [
+        "real",
+        "saw this, no thoughts",
+        "mid but ok",
+    ],
+}
+
+# How many random crowd members react, by clout tier - separate from (and in
+# addition to) the fandom's 3 named cast members.
+CROWD_COUNTS = {"Cancelled": 3, "Nobody": 0, "Rising": 1, "Viral": 3, "Famous": 4}
+
 TIERS = [
     (float("-inf"), 0, "Cancelled", "💀"),
     (0, 50, "Nobody", "🌱"),
@@ -242,6 +281,25 @@ def reactors_for_tier(tier_label, characters):
     return random.sample(characters, n)
 
 
+def crowd_comments_for(tier_label, category):
+    n = min(CROWD_COUNTS.get(tier_label, 0), len(CROWD_HANDLES))
+    if n <= 0:
+        return []
+    pool = CROWD_REPLIES.get(category, CROWD_REPLIES["neutral"])
+    handles = random.sample(CROWD_HANDLES, n)
+    return [
+        {"author": f"@{h}", "avatar": crowd_avatar(h), "text": random.choice(pool), "ai": False, "crowd": True}
+        for h in handles
+    ]
+
+
+def liked_by_preview(likes):
+    n = min(3, likes, len(CROWD_HANDLES))
+    if n <= 0:
+        return []
+    return random.sample(CROWD_HANDLES, n)
+
+
 def react_to_post(fandom_id, persona_name, category, tier_label, post_text="", exclude_name=None):
     fandom = FANDOMS[fandom_id]
     candidates = [c for c in fandom["characters"] if c["name"] != exclude_name]
@@ -256,11 +314,13 @@ def react_to_post(fandom_id, persona_name, category, tier_label, post_text="", e
         if not text:
             pool = ARCHETYPE_REPLIES[char["archetype"]][category]
             text = random.choice(pool).format(name=persona_name)
-        comments.append({"author": char["name"], "avatar": char["avatar"], "text": text, "ai": is_ai})
+        comments.append({"author": char["name"], "avatar": char["avatar"], "text": text, "ai": is_ai, "crowd": False})
+    comments.extend(crowd_comments_for(tier_label, category))
     base_likes = {"hype": (20, 60), "drama": (10, 90), "cancel": (0, 15), "snark": (5, 25), "neutral": (5, 30)}
     lo, hi = base_likes.get(category, (5, 20))
     likes = random.randint(lo, hi)
-    return comments, likes
+    liked_by = liked_by_preview(likes)
+    return comments, likes, liked_by
 
 
 def default_state():
@@ -312,7 +372,9 @@ def seed_posts(state):
     posts = []
     for category, text in seeds:
         char = random.choice(fandom["characters"])
-        comments, likes = react_to_post(state["fandom_id"], char["name"], category, "Rising", exclude_name=char["name"])
+        comments, likes, liked_by = react_to_post(
+            state["fandom_id"], char["name"], category, "Rising", exclude_name=char["name"]
+        )
         # seed posts are from NPCs, so reroll one comment to keep it varied
         posts.append(
             {
@@ -323,6 +385,7 @@ def seed_posts(state):
                 "text": text,
                 "category": category,
                 "likes": likes,
+                "liked_by": liked_by,
                 "comments": comments[:2],
                 "ts": time.time(),
             }
@@ -406,7 +469,9 @@ def api_post():
     state["clout"] += clout_delta(category)
 
     tier = tier_for(state["clout"])
-    comments, likes = react_to_post(state["fandom_id"], state["persona"]["name"], category, tier["label"], post_text=text)
+    comments, likes, liked_by = react_to_post(
+        state["fandom_id"], state["persona"]["name"], category, tier["label"], post_text=text
+    )
 
     post = {
         "id": secrets.token_hex(6),
@@ -416,6 +481,7 @@ def api_post():
         "text": text,
         "category": category,
         "likes": likes,
+        "liked_by": liked_by,
         "comments": comments,
         "ts": time.time(),
     }
