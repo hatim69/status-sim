@@ -54,6 +54,28 @@ python app.py
 
 Then open http://localhost:5050.
 
+## Deploy it (so you can open it from your phone)
+
+`localhost` only works on the machine running the server, so to view this
+on a phone you need it hosted somewhere public. This repo is already set
+up for [Render](https://render.com) (same host as the `owo.py` bot in the
+`owo-script` repo):
+
+1. On Render: **New → Web Service**, connect your GitHub account, pick
+   `status-sim` (it's private, so you'll need to grant Render access to it).
+2. Settings:
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT`
+3. Deploy. Render gives you a public `https://...onrender.com` URL — open
+   that in your phone's browser, no local setup needed.
+4. Whenever you get an Anthropic API key, add it under that service's
+   **Environment** tab as `ANTHROPIC_API_KEY` and redeploy (or it'll pick it
+   up automatically on the next restart) — no code changes needed, this
+   flips on the live Claude replies described above.
+
+Render's free tier spins down after inactivity, so the first load after a
+while can take ~30-60s to wake back up — normal, not broken.
+
 ## What's implemented
 
 - Persona creation (name, avatar, bio)

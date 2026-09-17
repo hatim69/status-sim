@@ -531,4 +531,7 @@ def api_reset():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Debug mode exposes an interactive, code-executing console on unhandled
+    # errors - never turn it on for a publicly reachable deployment (Render, etc).
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)
