@@ -23,7 +23,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 MAX_POSTS_STORED = 15
+MAX_COMMENTS_STORED = 40
 POST_ENERGY_COST = 15
+REPLY_ENERGY_COST = 5
 DEFAULT_MAX_ENERGY = 100
 PREMIUM_MAX_ENERGY = 150
 # How many of a post's reactions may use the live Claude API per post (rest use templates).
@@ -39,9 +41,18 @@ FANDOMS = {
         "emoji": "🪄",
         "desc": "A magic boarding school full of rivalries, secret spells, and prophecy drama.",
         "characters": [
-            {"name": "Prof. Lyra Ashbourne", "avatar": "🧙‍♀️", "archetype": "mentor"},
-            {"name": "Finch Holloway", "avatar": "😏", "archetype": "rival"},
-            {"name": "Wren Sable", "avatar": "⭐", "archetype": "bestie"},
+            {
+                "name": "Prof. Lyra Ashbourne", "avatar": "🧙‍♀️", "archetype": "mentor",
+                "vibe": "A stern-but-devoted magic instructor who's seen every scandal the academy has ever had and never lets her favorites slide on discipline.",
+            },
+            {
+                "name": "Finch Holloway", "avatar": "😏", "archetype": "rival",
+                "vibe": "A smug legacy student convinced he's destined for greatness, who can't resist a petty dig even when he's impressed.",
+            },
+            {
+                "name": "Wren Sable", "avatar": "⭐", "archetype": "bestie",
+                "vibe": "An overly theatrical best friend who treats every hallway rumor like the opening act of an opera.",
+            },
         ],
     },
     "galactic-uprising": {
@@ -49,9 +60,18 @@ FANDOMS = {
         "emoji": "🚀",
         "desc": "A rebellion against an empire, fought one viral broadcast at a time.",
         "characters": [
-            {"name": "Commander Vex", "avatar": "🎖️", "archetype": "mentor"},
-            {"name": "Nova Sarn", "avatar": "😎", "archetype": "rival"},
-            {"name": "K-9RO", "avatar": "🤖", "archetype": "bestie"},
+            {
+                "name": "Commander Vex", "avatar": "🎖️", "archetype": "mentor",
+                "vibe": "A battle-hardened rebel leader who talks in clipped orders but has a soft spot she'll never admit to.",
+            },
+            {
+                "name": "Nova Sarn", "avatar": "😎", "archetype": "rival",
+                "vibe": "A hotshot pilot with main-character syndrome who turns every mission into a personal rivalry.",
+            },
+            {
+                "name": "K-9RO", "avatar": "🤖", "archetype": "bestie",
+                "vibe": "A blunt, glitchy support droid whose loyalty subroutines have clearly been hacked to 'unconditional bestie'.",
+            },
         ],
     },
     "neon-district": {
@@ -59,9 +79,18 @@ FANDOMS = {
         "emoji": "🌆",
         "desc": "Cyberpunk hackers, fixers, and streamers fighting for clout in the underground.",
         "characters": [
-            {"name": "Ghost_Iri", "avatar": "👤", "archetype": "mentor"},
-            {"name": "Dex Malone", "avatar": "🕶️", "archetype": "rival"},
-            {"name": "Juno Cross", "avatar": "📡", "archetype": "bestie"},
+            {
+                "name": "Ghost_Iri", "avatar": "👤", "archetype": "mentor",
+                "vibe": "An untraceable veteran hacker who mentors from the shadows and speaks entirely in warnings and cryptic respect.",
+            },
+            {
+                "name": "Dex Malone", "avatar": "🕶️", "archetype": "rival",
+                "vibe": "A slick fixer who's always one deal ahead and never lets you forget it.",
+            },
+            {
+                "name": "Juno Cross", "avatar": "📡", "archetype": "bestie",
+                "vibe": "A livestreaming hypewoman who narrates your life like it's must-watch content, because to her, it is.",
+            },
         ],
     },
     "ever-after-high": {
@@ -69,9 +98,18 @@ FANDOMS = {
         "emoji": "🦸",
         "desc": "A superhero teen drama where secret identities never stay secret for long.",
         "characters": [
-            {"name": "Coach Blaze", "avatar": "🔥", "archetype": "mentor"},
-            {"name": "Ivy Vane", "avatar": "🖤", "archetype": "rival"},
-            {"name": "Milo Chen", "avatar": "😂", "archetype": "bestie"},
+            {
+                "name": "Coach Blaze", "avatar": "🔥", "archetype": "mentor",
+                "vibe": "A golden-boy hero-in-training who takes 'with great power comes great responsibility' way too literally.",
+            },
+            {
+                "name": "Ivy Vane", "avatar": "🖤", "archetype": "rival",
+                "vibe": "A future-villain-coded mean girl who collects other people's secrets like trophies.",
+            },
+            {
+                "name": "Milo Chen", "avatar": "😂", "archetype": "bestie",
+                "vibe": "The chaotic-good best friend who finds every disaster hilarious and every win worth screaming about.",
+            },
         ],
     },
     "undead-dawn": {
@@ -79,9 +117,18 @@ FANDOMS = {
         "emoji": "🧟",
         "desc": "A zombie apocalypse survivor camp where every post could be your last.",
         "characters": [
-            {"name": "Sarge Reyes", "avatar": "🪖", "archetype": "mentor"},
-            {"name": "Raider Cole", "avatar": "🔪", "archetype": "rival"},
-            {"name": "Pixel", "avatar": "🎮", "archetype": "bestie"},
+            {
+                "name": "Sarge Reyes", "avatar": "🪖", "archetype": "mentor",
+                "vibe": "A grizzled survivalist who's kept the camp alive through sheer stubbornness and zero patience for nonsense.",
+            },
+            {
+                "name": "Raider Cole", "avatar": "🔪", "archetype": "rival",
+                "vibe": "A self-serving scavenger who'll help you survive right after he's done needling you about it.",
+            },
+            {
+                "name": "Pixel", "avatar": "🎮", "archetype": "bestie",
+                "vibe": "A wired-in teen hacker who treats the apocalypse like content and you like the main character of it.",
+            },
         ],
     },
     "main-character-era": {
@@ -89,9 +136,18 @@ FANDOMS = {
         "emoji": "💅",
         "desc": "Fully fictional celebrity culture: red carpets, paparazzi, and clout that can vanish overnight. (No real public figures appear in this world.)",
         "characters": [
-            {"name": "Coach Reyna Cole", "avatar": "🕶️", "archetype": "mentor"},
-            {"name": "Zayne Kroix", "avatar": "🎤", "archetype": "rival"},
-            {"name": "Peaches Monroe", "avatar": "💋", "archetype": "bestie"},
+            {
+                "name": "Coach Reyna Cole", "avatar": "🕶️", "archetype": "mentor",
+                "vibe": "A former publicist turned manager who's allergic to bad optics and fiercely protective of her one client.",
+            },
+            {
+                "name": "Zayne Kroix", "avatar": "🎤", "archetype": "rival",
+                "vibe": "A rising pop star who treats every headline as a competition he's determined to win.",
+            },
+            {
+                "name": "Peaches Monroe", "avatar": "💋", "archetype": "bestie",
+                "vibe": "A glam-squad ride-or-die who narrates your rise to fame like she's already writing the documentary.",
+            },
         ],
     },
 }
@@ -288,7 +344,10 @@ def crowd_comments_for(tier_label, category):
     pool = CROWD_REPLIES.get(category, CROWD_REPLIES["neutral"])
     handles = random.sample(CROWD_HANDLES, n)
     return [
-        {"author": f"@{h}", "avatar": crowd_avatar(h), "text": random.choice(pool), "ai": False, "crowd": True}
+        {
+            "author": f"@{h}", "avatar": crowd_avatar(h), "text": random.choice(pool),
+            "ai": False, "crowd": True, "is_user": False, "likes": random.randint(0, 20),
+        }
         for h in handles
     ]
 
@@ -314,13 +373,32 @@ def react_to_post(fandom_id, persona_name, category, tier_label, post_text="", e
         if not text:
             pool = ARCHETYPE_REPLIES[char["archetype"]][category]
             text = random.choice(pool).format(name=persona_name)
-        comments.append({"author": char["name"], "avatar": char["avatar"], "text": text, "ai": is_ai, "crowd": False})
+        comments.append({
+            "author": char["name"], "avatar": char["avatar"], "text": text, "ai": is_ai,
+            "crowd": False, "is_user": False, "likes": random.randint(0, 35),
+        })
     comments.extend(crowd_comments_for(tier_label, category))
     base_likes = {"hype": (20, 60), "drama": (10, 90), "cancel": (0, 15), "snark": (5, 25), "neutral": (5, 30)}
     lo, hi = base_likes.get(category, (5, 20))
     likes = random.randint(lo, hi)
     liked_by = liked_by_preview(likes)
     return comments, likes, liked_by
+
+
+def react_to_reply(fandom_id, persona_name, reply_text, category):
+    """A single lightweight reaction to a user's reply inside a thread - much
+    cheaper than react_to_post, since a reply thread isn't a whole new scene."""
+    fandom = FANDOMS[fandom_id]
+    char = random.choice(fandom["characters"])
+    text = ai_backend.generate_reply(char, fandom["name"], persona_name, reply_text, category)
+    is_ai = text is not None
+    if not text:
+        pool = ARCHETYPE_REPLIES[char["archetype"]][category]
+        text = random.choice(pool).format(name=persona_name)
+    return {
+        "author": char["name"], "avatar": char["avatar"], "text": text, "ai": is_ai,
+        "crowd": False, "is_user": False, "likes": random.randint(0, 35),
+    }
 
 
 def default_state():
@@ -487,6 +565,45 @@ def api_post():
     }
     state["posts"].insert(0, post)
     state["posts"] = state["posts"][:MAX_POSTS_STORED]
+    save_state(state)
+    return jsonify(public_state(state))
+
+
+@app.route("/api/post/<post_id>/reply", methods=["POST"])
+def api_reply(post_id):
+    data = request.get_json(force=True) or {}
+    text = (data.get("text") or "").strip()[:280]
+    if not text:
+        return jsonify({"error": "Reply can't be empty."}), 400
+
+    state = get_state()
+    if not state["persona"] or not state["fandom_id"]:
+        return jsonify({"error": "Finish onboarding first."}), 400
+    if state["energy"] < REPLY_ENERGY_COST:
+        return jsonify({"error": "Not enough energy.", "code": "no_energy"}), 400
+
+    post = next((p for p in state["posts"] if p["id"] == post_id), None)
+    if post is None:
+        return jsonify({"error": "That post isn't around anymore."}), 404
+
+    state["energy"] -= REPLY_ENERGY_COST
+    category = classify_post(text)
+    state["clout"] += clout_delta(category) // 2
+
+    reply_comment = {
+        "author": state["persona"]["name"],
+        "avatar": state["persona"]["avatar"],
+        "text": text,
+        "ai": False,
+        "crowd": False,
+        "is_user": True,
+        "likes": random.randint(0, 15),
+    }
+    reaction_comment = react_to_reply(state["fandom_id"], state["persona"]["name"], text, category)
+
+    post["comments"].append(reply_comment)
+    post["comments"].append(reaction_comment)
+    post["comments"] = post["comments"][-MAX_COMMENTS_STORED:]
     save_state(state)
     return jsonify(public_state(state))
 

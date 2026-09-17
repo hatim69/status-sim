@@ -51,11 +51,16 @@ def generate_reply(character, fandom_name, persona_name, post_text, category):
         return None
 
     voice = ARCHETYPE_VOICE.get(character["archetype"], "an in-character social media follower")
+    vibe = character.get("vibe")
+    persona_line = f" Specifically: {vibe}" if vibe else ""
     system = (
-        f"You are {character['name']}, {voice}, inside the fictional world '{fandom_name}'. "
+        f"You are {character['name']}, {voice}, inside the fictional world '{fandom_name}'.{persona_line} "
+        "Let that specific personality come through clearly - don't default to a generic tone. "
         "Reply to a friend's social media post in-character, in one short sentence (under 140 "
         "characters), using current casual internet slang naturally, not forced. Never break "
-        f"character and never mention being an AI. The post's vibe is categorized as '{category}'."
+        f"character and never mention being an AI. The post's vibe is categorized as '{category}'. "
+        f"{character['name']} is a wholly fictional character - never reference or imply any real, "
+        "named public figure."
     )
     try:
         resp = client.messages.create(

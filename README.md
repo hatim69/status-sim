@@ -20,7 +20,15 @@ gotten other AI-companion apps into real legal trouble.
 Instead, `main-character-era` is a fully fictional celebrity-culture world
 (red carpets, paparazzi, clout that can vanish overnight) populated by
 invented characters (`Coach Reyna Cole`, `Zayne Kroix`, `Peaches Monroe`) —
-it gets you the fame fantasy without impersonating anyone real.
+it gets you the fame fantasy without impersonating anyone real. This holds
+even with the tag-them-as-fake idea some apps use: a "this is a bot" label
+elsewhere in the UI doesn't travel with a screenshot of just the post, so it
+doesn't actually prevent the impersonation/misattribution risk.
+
+Every character does have a distinct, specific personality now (`vibe` in
+each `FANDOMS` entry in `app.py`) that's fed into the Claude prompt in
+`ai_backend.py` for a much more "this feels like a real, opinionated
+person" quality than a generic template - just never a real, named one.
 
 ## AI-backed replies (optional)
 
@@ -83,6 +91,9 @@ while can take ~30-60s to wake back up — normal, not broken.
   (mentor / rival / bestie archetypes) — including the celebrity-culture one
 - A post composer that costs energy and gets reactions (likes + in-character
   comments, optionally live via Claude — see above)
+- Tap any post to open it and see the full thread, then reply to it (costs
+  5 ⚡, cheaper than a new post) - your reply gets its own in-character
+  reaction, same as a top-level post
 - A clout meter with tiers: Cancelled → Nobody → Rising → Viral → Famous
 - An energy economy: passive cap, "watch an ad" for a random top-up, a demo
   "premium" toggle that raises the cap

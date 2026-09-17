@@ -53,6 +53,18 @@ html, body {
 .brand { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
 .brand span { color: var(--accent-2); }
 
+.back-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
 .energy-pill {
   display: flex;
   align-items: center;
@@ -197,12 +209,15 @@ html, body {
 
 /* --- Feed --- */
 .feed { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
+.thread { padding: 14px 16px 8px; }
 .post {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px;
 }
+.post.clickable { cursor: pointer; }
+.post.clickable:active { opacity: 0.85; }
 .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .post-head .avatar { font-size: 22px; }
 .post-head .author { font-weight: 700; font-size: 14px; }
@@ -224,12 +239,15 @@ html, body {
 .badge-cat.cancel { background: #3a1414; color: var(--bad); }
 .badge-cat.snark, .badge-cat.neutral { background: #22223b; color: var(--text-dim); }
 
-.comments { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.comments { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 10px; }
 .comment { display: flex; gap: 8px; font-size: 13px; }
 .comment .avatar { font-size: 16px; }
 .comment .author { font-weight: 700; margin-right: 4px; }
 .comment.crowd { opacity: 0.72; font-size: 12.5px; }
 .comment.crowd .author { font-weight: 600; }
+.comment.mine { background: #241a3f; border: 1px solid var(--accent); border-radius: 10px; padding: 6px 8px; margin: -6px -8px; }
+.comment-body { display: flex; flex-direction: column; gap: 2px; }
+.comment-likes { font-size: 11px; color: var(--text-dim); }
 .ai-tag { opacity: 0.7; font-size: 11px; }
 
 /* --- Bottom nav / energy drawer --- */

@@ -4,6 +4,7 @@ const AVATARS = ["🙂", "😎", "🧛", "🧝", "🤖", "🐺", "🦊", "👽",
 let state = null;
 let fandoms = null;
 let draftAvatar = AVATARS[0];
+let openPostId = null;
 
 async function api(path, opts) {
   const res = await fetch(path, {
@@ -52,6 +53,11 @@ async function boot() {
 function render() {
   if (!state.persona) return renderPersonaScreen();
   if (!state.fandom) return renderFandomScreen();
+  if (openPostId) {
+    const post = state.posts.find((p) => p.id === openPostId);
+    if (post) return renderThreadScreen(post);
+    openPostId = null;
+  }
   return renderFeedScreen();
 }
 
@@ -176,7 +182,7 @@ function renderFeedScreen() {
   `;
 
   const feed = document.getElementById("feed");
-  state.posts.forEach((p) => feed.appendChild(renderPost(p)));
+  state.posts.forEach((p) => feed.appendChild(renderPost(p, { clickable: true })));
 
   document.getElementById("post-btn").onclick = submitPost;
   document.getElementById("ad-btn").onclick = watchAd;
@@ -185,15 +191,46 @@ function renderFeedScreen() {
   document.getElementById("energy-pill").onclick = watchAd;
 }
 
-function renderPost(p) {
+// --- Screen: thread (open a post, see every reply, add your own) --------------
+function renderThreadScreen(post) {
+  const energyPct = Math.round((state.energy / state.max_energy) * 100);
+  root.innerHTML = `
+    <div class="topbar">
+      <button class="back-btn" id="back-btn" aria-label="back">←</button>
+      <div class="brand">the post</div>
+      <div class="energy-pill" id="energy-pill">
+        ⚡ ${state.energy}/${state.max_energy}
+        <div class="energy-bar-mini"><div style="width:${energyPct}%"></div></div>
+      </div>
+    </div>
+    <div class="thread" id="thread"></div>
+    <div class="composer">
+      <textarea id="reply-text" maxlength="280" placeholder="tweet your reply..."></textarea>
+      <div class="composer-row">
+        <span class="cost">costs 5 ⚡ to reply</span>
+        <button class="btn small" id="reply-btn">reply</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("thread").appendChild(renderPost(post, { clickable: false }));
+  document.getElementById("back-btn").onclick = () => {
+    openPostId = null;
+    render();
+  };
+  document.getElementById("reply-btn").onclick = () => submitReply(post.id);
+  document.getElementById("energy-pill").onclick = watchAd;
+}
+
+function renderPost(p, { clickable = false } = {}) {
   const el = document.createElement("div");
-  el.className = "post";
-  const comments = p.comments
-    .map(
-      (c) =>
-        `<div class="comment${c.crowd ? " crowd" : ""}"><span class="avatar">${c.avatar}</span><span><span class="author">${escapeHtml(c.author)}</span>${escapeHtml(c.text)}${c.ai ? ' <span class="ai-tag" title="live Claude reply">✨</span>' : ""}</span></div>`
-    )
-    .join("");
+  el.className = "post" + (clickable ? " clickable" : "");
+  if (clickable) {
+    el.onclick = () => {
+      openPostId = p.id;
+      render();
+    };
+  }
+  const comments = p.comments.map(renderComment).join("");
   const likedBy = renderLikedBy(p.liked_by, p.likes);
   el.innerHTML = `
     <div class="post-head">
@@ -211,6 +248,19 @@ function renderPost(p) {
     ${comments ? `<div class="comments">${comments}</div>` : ""}
   `;
   return el;
+}
+
+function renderComment(c) {
+  const classes = ["comment"];
+  if (c.crowd) classes.push("crowd");
+  if (c.is_user) classes.push("mine");
+  return `<div class="${classes.join(" ")}">
+    <span class="avatar">${c.avatar}</span>
+    <span class="comment-body">
+      <span class="comment-text"><span class="author">${escapeHtml(c.author)}</span>${escapeHtml(c.text)}${c.ai ? ' <span class="ai-tag" title="live Claude reply">✨</span>' : ""}</span>
+      <span class="comment-likes">❤ ${c.likes ?? 0}</span>
+    </span>
+  </div>`;
 }
 
 function renderLikedBy(likedBy, likes) {
@@ -237,6 +287,26 @@ async function submitPost() {
     }
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function submitReply(postId) {
+  const input = document.getElementById("reply-text");
+  const text = input.value.trim();
+  if (!text) return toast("say something bestie");
+  const btn = document.getElementById("reply-btn");
+  btn.disabled = true;
+  try {
+    state = await api(`/api/post/${postId}/reply`, { text });
+    render();
+  } catch (e) {
+    if (e.message.toLowerCase().includes("energy")) {
+      toast("you're tapped out - watch an ad or go premium");
+    } else {
+      toast(e.message);
+    }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -268,6 +338,7 @@ async function togglePremium() {
 
 async function restart() {
   if (!confirm("start over? this wipes your persona, era, and feed.")) return;
+  openPostId = null;
   state = await api("/api/reset", {});
   render();
 }
